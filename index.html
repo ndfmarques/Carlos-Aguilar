@@ -463,6 +463,7 @@ function submitNoWork(reason, obs){
   var sel=getSelDate();
   var payload={
     date:sel.date, dayOfWeek:sel.dayOfWeek,
+    weekOf:fd(getWkDates(weekOffset)[0]),
     worker:'Carlos Aguilar',
     worked:'no',
     noworkReason:reason,
@@ -554,6 +555,7 @@ function submitDay(){
 
   var payload={
     date:sel.date, dayOfWeek:sel.dayOfWeek,
+    weekOf:fd(getWkDates(weekOffset)[0]),
     worker:'Carlos Aguilar',
     worked:'yes',
     workStart:(gv('wsh')||'—')+':'+(gv('wsm')||'00')+' '+wsAP,
