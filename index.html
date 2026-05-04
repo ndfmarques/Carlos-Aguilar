@@ -65,6 +65,11 @@ textarea:focus{outline:none;border-color:#1A3A6B}
 .photo-btn{display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px dashed #1A3A6B;border-radius:8px;background:#f0faf6;color:#0d2545;font-size:13px;font-weight:600;cursor:pointer;width:100%;margin-top:8px}
 .photo-prev{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .photo-prev img{width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid #dde3ee}
+.dayb{border:1px solid #dde3ee;border-radius:8px;padding:6px 2px;text-align:center;background:#fff;cursor:pointer;font-family:inherit}
+.dayb .dbn{font-size:9px;font-weight:700;color:#888;display:block}
+.dayb .dbd{font-size:12px;font-weight:600;color:#1a1a1a;display:block;margin-top:2px}
+.dayb.on{background:#1A3A6B;border-color:#1A3A6B}
+.dayb.on .dbn,.dayb.on .dbd{color:#fff}
 .okwrap{text-align:center;padding:2rem 1rem}
 .okicon{width:60px;height:60px;background:#E8EDF5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:28px;color:#1A3A6B}
 .nav{display:flex;gap:8px;margin:12px 0}
@@ -124,23 +129,27 @@ textarea:focus{outline:none;border-color:#1A3A6B}
         </div>
         <input type="hidden" id="selWorker" value="Carlos Aguilar">
       </div>
-      <div class="wbadge" style="margin-top:12px">
-        <div class="wt" id="twk">Week</div>
-        <div class="wr" id="wkr">—</div>
+
+      <!-- Semana -->
+      <div class="fg" style="margin-top:12px">
+        <span class="lbl" id="twklbl">Select Week</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="changeWeek(-1)" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#f4f4f2;font-size:18px;cursor:pointer">‹</button>
+          <div style="flex:1;text-align:center;background:#E8EDF5;border-radius:8px;padding:9px 12px">
+            <div style="font-size:11px;color:#888;font-weight:600" id="twklblrange">Week</div>
+            <div style="font-size:14px;font-weight:700;color:#0d2545" id="wkrange">—</div>
+          </div>
+          <button onclick="changeWeek(1)" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#f4f4f2;font-size:18px;cursor:pointer">›</button>
+        </div>
       </div>
+
+      <!-- Dias da semana -->
       <div class="fg">
         <span class="lbl" id="tdaylbl">Select Day</span>
-        <select id="selDay" onchange="onDayChange()">
-          <option value="" id="tdayph">Select day...</option>
-          <option value="0" id="td0">Monday</option>
-          <option value="1" id="td1">Tuesday</option>
-          <option value="2" id="td2">Wednesday</option>
-          <option value="3" id="td3">Thursday</option>
-          <option value="4" id="td4">Friday</option>
-          <option value="5" id="td5">Saturday</option>
-        </select>
+        <div id="daybtns" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
       </div>
-      <div class="irow" id="daterow" style="display:none">
+
+      <div class="irow" id="daterow" style="display:none;margin-top:4px">
         <span class="il" id="tdtlbl">Date</span>
         <span class="iv" id="dtval">—</span>
       </div>
@@ -290,7 +299,7 @@ textarea:focus{outline:none;border-color:#1A3A6B}
 </div>
 
 <script>
-var lang='en', worked='', noworkReason='', days=[], wsAP='AM', weAP='PM', SURL='https://script.google.com/macros/s/AKfycbwyB8uQZ-ZYlFgWhzjgHW8HYseCHQOmRmjkyOgb3eVEfTY2H7XCQpcYC4Ss84V5Kl-p/exec';
+var lang='en', worked='', noworkReason='', days=[], wsAP='AM', weAP='PM', weekOffset=0, selDayIdx=-1, SURL='https://script.google.com/macros/s/AKfycbwyB8uQZ-ZYlFgWhzjgHW8HYseCHQOmRmjkyOgb3eVEfTY2H7XCQpcYC4Ss84V5Kl-p/exec';
 
 var LOCS=['PO #02000 YARD','PO #21001 NEX','PO #22015 CAPEX','PO #22034 GHC','PO #22057 RIVERFRONT','PO #23005 DENTON I','PO #23026 SH 183','PO #23029 NTI','PO #23073 US 59 WEBB CO','PO #23083 SL 1604','PO #24047 IH 30 TARRANT','PO #24062 IH 35 WACO','PO #25025 COLORADO','PO #25036 LEWISVILLE DAM','PO #25042 DENTON II','PO #25044 BASTROP','PO #25046 LIVE OAK','PO #25083 TRAIL TRAIL','Other / Otro'];
 var DSE=['Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -340,9 +349,10 @@ function setLang(l,b){
 
 function applyLang(){
   var t=T[lang];
-  tx('ts1',t.s1);tx('twrkrlbl',t.wrkrlbl);tx('twk',t.wk);
-  tx('tdaylbl',t.dlbl);tx('tdayph',t.dph);tx('tdtlbl',t.dtlbl);
-  for(var i=0;i<6;i++) tx('td'+i,t['d'+i]);
+  tx('ts1',t.s1);tx('tdtlbl',t.dtlbl);
+  tx('twklbl',lang==='en'?'Select Week':'Seleccionar Semana');
+  tx('twklblrange',lang==='en'?'Week':'Semana');
+  tx('tdaylbl',lang==='en'?'Select Day':'Seleccionar Día');
   tx('ts2',t.s2);tx('twrkno',t.wrkno);tx('twrkyes',t.wrkyes);
   tx('ts3',t.s3);
   tx('tws',t.ws);tx('twe',t.we);tx('ttoth',t.toth);tx('totl',t.ot);tx('tobst',t.obs);
@@ -353,22 +363,61 @@ function applyLang(){
   tx('tnod',t.nod);tx('tnewday',t.ned);tx('tnewrec',t.ned);
   tx('tnwmtitle',t.nwmtitle);tx('tnwmsub',t.nwmsub);tx('tnwcancel',t.nwcancel);tx('tnwconfirm',t.nwconfirm);
   renderNoWorkReasons();
-  updWk();
+  renderWeek();
 }
 
-function getMon(){var d=new Date(),dow=d.getDay(),m=new Date(d);m.setDate(d.getDate()-(dow===0?6:dow-1));m.setHours(0,0,0,0);return m;}
-function getWkDates(){var m=getMon(),a=[];for(var i=0;i<6;i++){var d=new Date(m);d.setDate(m.getDate()+i);a.push(d);}return a;}
+function getMon(offset){
+  var d=new Date(),dow=d.getDay(),m=new Date(d);
+  m.setDate(d.getDate()-(dow===0?6:dow-1)+(offset||0)*7);
+  m.setHours(0,0,0,0);return m;
+}
+function getWkDates(offset){
+  var m=getMon(offset),a=[];
+  for(var i=0;i<7;i++){var d=new Date(m);d.setDate(m.getDate()+i);a.push(d);}
+  return a;
+}
 function fd(d){return pad(d.getMonth()+1)+'/'+pad(d.getDate())+'/'+d.getFullYear();}
 function fs(d){return pad(d.getMonth()+1)+'/'+pad(d.getDate());}
 
-function updWk(){var w=getWkDates();var r=fs(w[0])+' – '+fs(w[5]);tx('wkr',r);tx('dwkr',r);}
-
-function onDayChange(){
-  var sel=e('selDay'),row=e('daterow');
-  if(!sel.value){row.style.display='none';return;}
-  tx('dtval',fs(getWkDates()[parseInt(sel.value)]));
-  row.style.display='flex';
+function changeWeek(dir){
+  weekOffset+=dir;
+  selDayIdx=-1;
+  e('daterow').style.display='none';
+  renderWeek();
 }
+
+function renderWeek(){
+  var wdays=getWkDates(weekOffset);
+  var mon=wdays[0],sun=wdays[6];
+  e('wkrange').textContent=fs(mon)+' – '+fs(sun)+'/'+sun.getFullYear();
+  var shorts=lang==='en'?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  var c=e('daybtns');c.innerHTML='';
+  wdays.forEach(function(d,i){
+    var b=document.createElement('button');
+    b.className='dayb'+(selDayIdx===i?' on':'');
+    b.innerHTML='<span class="dbn">'+shorts[i]+'</span><span class="dbd">'+d.getDate()+'</span>';
+    b.onclick=(function(idx,date){return function(){
+      selDayIdx=idx;
+      document.querySelectorAll('.dayb').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      var fullDays=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      e('dtval').textContent=fullDays[idx]+', '+fs(date)+'/'+date.getFullYear();
+      e('daterow').style.display='flex';
+    };})(i,d);
+    c.appendChild(b);
+  });
+}
+
+function updWk(){renderWeek();}
+
+function getSelDate(){
+  if(selDayIdx===-1)return{date:'',dayOfWeek:''};
+  var d=getWkDates(weekOffset)[selDayIdx];
+  var fullDays=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  return{date:fd(d),dayOfWeek:fullDays[selDayIdx]};
+}
+
+function onDateChange(){}
 
 function renderNoWorkReasons(){
   var t=T[lang];
@@ -405,18 +454,16 @@ function confirmNoWork(){
   submitNoWork(noworkReason, obs);
 }
 function submitNoWork(reason, obs){
-  var idx=parseInt(e('selDay').value);
-  var wd=getWkDates();
-  var dFull=lang==='en'?DFE:DFS;
+  var sel=getSelDate();
   var payload={
-    date:fd(wd[idx]),dayOfWeek:dFull[idx],weekOf:fd(wd[0]),
+    date:sel.date, dayOfWeek:sel.dayOfWeek,
     worker:'Carlos Aguilar',
     worked:'no',
     noworkReason:reason,
-    observations:obs
+    generalObs:obs
   };
   days.push(payload);
-  showOk(dFull[idx]);
+  showOk(sel.dayOfWeek);
 }
 
 
@@ -462,7 +509,7 @@ function goS(n){
 }
 
 function next1(){
-  if(!e('selDay').value){alert(lang==='en'?'Please select a day.':'Selecciona un día.');return;}
+  if(selDayIdx===-1){alert(lang==='en'?'Please select a day.':'Selecciona un día.');return;}
   goS(2);
 }
 function next2(){
@@ -491,12 +538,10 @@ function submitDay(){
   var btn=e('bsub');
   btn.textContent=T[lang].snd;btn.disabled=true;
 
-  var idx=parseInt(e('selDay').value);
-  var wd=getWkDates();
-  var dFull=lang==='en'?DFE:DFS;
+  var sel=getSelDate();
 
   var payload={
-    date:fd(wd[idx]),dayOfWeek:dFull[idx],weekOf:fd(wd[0]),
+    date:sel.date, dayOfWeek:sel.dayOfWeek,
     worker:'Carlos Aguilar',
     worked:'yes',
     workStart:(gv('wsh')||'—')+':'+(gv('wsm')||'00')+' '+wsAP,
@@ -514,20 +559,20 @@ function submitDay(){
 
   days=days.filter(function(d){return d.date!==payload.date||d.worker!==payload.worker;});
   days.push(payload);
-  showOk(dFull[idx]);
+  showOk(sel.dayOfWeek);
 }
 
 function showDash(){renderAll();showPage('pDash');}
 
 function newDay(){
-  wsAP='AM';weAP='PM';worked='';noworkReason='';
-  e('selDay').value='';
+  wsAP='AM';weAP='PM';worked='';noworkReason='';weekOffset=0;selDayIdx=-1;
   e('daterow').style.display='none';
   ['wsh','wsm','weh','wem','genobs','nwobs'].forEach(function(id){var x=e(id);if(x)x.value='';});
   document.querySelectorAll('#rgwrk .ro').forEach(function(o){o.classList.remove('on');});
   e('wsam').classList.add('on');e('wspm').classList.remove('on');
   e('weam').classList.remove('on');e('wepm').classList.add('on');
   tx('toth','—');tx('otv','—');
+  renderWeek();
   goS(1);showPage('pForm');
 }
 
@@ -538,8 +583,8 @@ function showTab(tab,btn){
 }
 
 function renderAll(){
-  var wd=getWkDates(),tStr=fd(new Date()),ds=lang==='en'?DSE:DSS;
-  var wS=wd[0].getTime(),wE=new Date(wd[5]);wE.setHours(23,59,59);
+  var wd=getWkDates(0),tStr=fd(new Date()),ds=lang==='en'?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  var wS=wd[0].getTime(),wE=new Date(wd[6]);wE.setHours(23,59,59);
   var wkD=days.filter(function(d){
     var p=d.date.split('/');
     var dt=new Date(parseInt(p[2]),parseInt(p[0])-1,parseInt(p[1]));
@@ -627,4 +672,3 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 </script>
 </body></html>
-       
