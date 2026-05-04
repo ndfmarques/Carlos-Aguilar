@@ -132,14 +132,13 @@ textarea:focus{outline:none;border-color:#1A3A6B}
 
       <!-- Semana -->
       <div class="fg" style="margin-top:12px">
-        <span class="lbl" id="twklbl">Select Week</span>
         <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="changeWeek(-1)" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#f4f4f2;font-size:18px;cursor:pointer">‹</button>
+          <button onclick="changeWeek(-1)" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#f4f4f2;font-size:18px;cursor:pointer;flex-shrink:0">‹</button>
           <div style="flex:1;text-align:center;background:#E8EDF5;border-radius:8px;padding:9px 12px">
-            <div style="font-size:11px;color:#888;font-weight:600" id="twklblrange">Week</div>
+            <div style="font-size:11px;color:#888;font-weight:600" id="twklblrange">Current Week</div>
             <div style="font-size:14px;font-weight:700;color:#0d2545" id="wkrange">—</div>
           </div>
-          <button onclick="changeWeek(1)" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#f4f4f2;font-size:18px;cursor:pointer">›</button>
+          <button onclick="changeWeek(1)" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#f4f4f2;font-size:18px;cursor:pointer;flex-shrink:0">›</button>
         </div>
       </div>
 
@@ -391,19 +390,26 @@ function renderWeek(){
   var mon=wdays[0],sun=wdays[6];
   e('wkrange').textContent=fs(mon)+' – '+fs(sun)+'/'+sun.getFullYear();
   var shorts=lang==='en'?['Mon','Tue','Wed','Thu','Fri','Sat','Sun']:['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  var usedDates=days.map(function(d){return d.date;});
   var c=e('daybtns');c.innerHTML='';
   wdays.forEach(function(d,i){
+    var dateStr=fd(d);
+    var isUsed=usedDates.indexOf(dateStr)!==-1;
     var b=document.createElement('button');
-    b.className='dayb'+(selDayIdx===i?' on':'');
-    b.innerHTML='<span class="dbn">'+shorts[i]+'</span><span class="dbd">'+d.getDate()+'</span>';
-    b.onclick=(function(idx,date){return function(){
-      selDayIdx=idx;
-      document.querySelectorAll('.dayb').forEach(function(x){x.classList.remove('on');});
-      b.classList.add('on');
-      var fullDays=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-      e('dtval').textContent=fullDays[idx]+', '+fs(date)+'/'+date.getFullYear();
-      e('daterow').style.display='flex';
-    };})(i,d);
+    b.className='dayb'+(selDayIdx===i?' on':'')+(isUsed?' used':'');
+    b.disabled=isUsed;
+    b.style.cssText=isUsed?'opacity:0.4;cursor:not-allowed':'cursor:pointer';
+    b.innerHTML='<span class="dbn">'+shorts[i]+'</span><span class="dbd">'+d.getDate()+'</span>'+(isUsed?'<span style="font-size:8px;display:block;color:#888">✓</span>':'');
+    if(!isUsed){
+      b.onclick=(function(idx,date){return function(){
+        selDayIdx=idx;
+        document.querySelectorAll('.dayb').forEach(function(x){x.classList.remove('on');});
+        b.classList.add('on');
+        var fullDays=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+        e('dtval').textContent=fullDays[idx]+', '+fs(date)+'/'+date.getFullYear();
+        e('daterow').style.display='flex';
+      };})(i,d);
+    }
     c.appendChild(b);
   });
 }
@@ -462,7 +468,13 @@ function submitNoWork(reason, obs){
     noworkReason:reason,
     generalObs:obs
   };
+  if(SURL){
+    fetch(SURL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)})
+      .catch(function(){});
+  }
+  days=days.filter(function(d){return d.date!==payload.date;});
   days.push(payload);
+  renderWeek();
   showOk(sel.dayOfWeek);
 }
 
@@ -559,13 +571,14 @@ function submitDay(){
 
   days=days.filter(function(d){return d.date!==payload.date||d.worker!==payload.worker;});
   days.push(payload);
+  renderWeek();
   showOk(sel.dayOfWeek);
 }
 
 function showDash(){renderAll();showPage('pDash');}
 
 function newDay(){
-  wsAP='AM';weAP='PM';worked='';noworkReason='';weekOffset=0;selDayIdx=-1;
+  wsAP='AM';weAP='PM';worked='';noworkReason='';selDayIdx=-1;
   e('daterow').style.display='none';
   ['wsh','wsm','weh','wem','genobs','nwobs'].forEach(function(id){var x=e(id);if(x)x.value='';});
   document.querySelectorAll('#rgwrk .ro').forEach(function(o){o.classList.remove('on');});
